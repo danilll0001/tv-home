@@ -27,10 +27,24 @@ jobs:
 
     - name: Build APK Automatically
       run: |
-        BUILD_FILE=$(find . -name "build.gradle" -o -name "build.gradle.kts" | grep -v "/build/" | head -n 1)
-        PROJECT_DIR=$(dirname "$BUILD_FILE")
-        echo "Gefundener Projekt-Pfad: $PROJECT_DIR"
-        cd "$PROJECT_DIR"
+        echo "Suche nach settings.gradle im Repository:"
+        SETTINGS_PATH=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" | head -n 1)
+        echo "Gefunden: $SETTINGS_PATH"
+        
+        if [ -n "$SETTINGS_PATH" ]; then
+          DIR=$(dirname "$SETTINGS_PATH")
+          echo "Wechsle in den Ordner: $DIR"
+          cd "$DIR"
+        else
+          echo "Keine settings.gradle gefunden! Suche nach build.gradle:"
+          BUILD_PATH=$(find . -name "build.gradle" -o -name "build.gradle.kts" | grep -v "/build/" | head -n 1)
+          DIR=$(dirname "$BUILD_PATH")
+          echo "Wechsle in den Ordner: $DIR"
+          cd "$DIR"
+        fi
+        
+        echo "Aktuelles Verzeichnis: $(pwd)"
+        ls -la
         
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew || true
