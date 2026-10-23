@@ -17,13 +17,12 @@ jobs:
       uses: actions/setup-java@v4
       with:
         java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+        distribution: 'zulu'
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build APK
+    - name: Build Debug APK
       run: ./gradlew assembleDebug
 
     - name: Upload APK
