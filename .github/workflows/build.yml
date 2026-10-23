@@ -19,37 +19,9 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Install Modern Gradle (8.5)
+    - name: List Repository Contents
       run: |
-        wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
-        unzip -q gradle-8.5-bin.zip
-        echo "$PWD/gradle-8.5/bin" >> $GITHUB_PATH
-
-    - name: Find and Build APK
-      run: |
-        SETTINGS_FILE=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" | head -n 1)
-        if [ -n "$SETTINGS_FILE" ]; then
-          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
-          echo "Gefundener Projekt-Ordner: $PROJECT_DIR"
-          cd "$PROJECT_DIR"
-        else
-          echo "Nutze das Hauptverzeichnis."
-        fi
-        
-        # Gradle Wrapper generieren und Berechtigungen setzen
-        gradle wrapper --gradle-version 8.5
-        chmod +x gradlew || true
-        
-        # App bauen
-        if [ -f "./gradlew" ]; then
-          ./gradlew assembleDebug
-        else
-          gradle assembleDebug
-        fi
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: TV-Home-Launcher-APK
-        path: '**/build/outputs/apk/debug/app-debug.apk'
-        if-no-files-found: error
+        echo "=== Inhalt des Hauptverzeichnisses ==="
+        ls -la
+        echo "=== Suche nach Gradle-Dateien im gesamten Repo ==="
+        find . -name "*.gradle" -o -name "*.kts"
