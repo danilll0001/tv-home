@@ -25,26 +25,10 @@ jobs:
         unzip -q gradle-8.5-bin.zip
         echo "$PWD/gradle-8.5/bin" >> $GITHUB_PATH
 
-    - name: Build APK Automatically
+    - name: Build APK in Launcher Directory
       run: |
-        echo "Suche nach settings.gradle im Repository:"
-        SETTINGS_PATH=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" | head -n 1)
-        echo "Gefunden: $SETTINGS_PATH"
-        
-        if [ -n "$SETTINGS_PATH" ]; then
-          DIR=$(dirname "$SETTINGS_PATH")
-          echo "Wechsle in den Ordner: $DIR"
-          cd "$DIR"
-        else
-          echo "Keine settings.gradle gefunden! Suche nach build.gradle:"
-          BUILD_PATH=$(find . -name "build.gradle" -o -name "build.gradle.kts" | grep -v "/build/" | head -n 1)
-          DIR=$(dirname "$BUILD_PATH")
-          echo "Wechsle in den Ordner: $DIR"
-          cd "$DIR"
-        fi
-        
+        cd launcher
         echo "Aktuelles Verzeichnis: $(pwd)"
-        ls -la
         
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew || true
@@ -59,5 +43,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: TV-Home-Launcher-APK
-        path: '**/build/outputs/apk/debug/app-debug.apk'
+        path: 'launcher/app/build/outputs/apk/debug/app-debug.apk'
         if-no-files-found: error
