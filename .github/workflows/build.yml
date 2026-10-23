@@ -13,17 +13,20 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up JDK 8
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '8'
+        java-version: '17'
         distribution: 'temurin'
 
-    - name: Install Gradle
-      run: sudo apt-get update && sudo apt-get install -y gradle
+    - name: Install Modern Gradle (8.5)
+      run: |
+        wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
+        unzip gradle-8.5-bin.zip
+        echo "$PWD/gradle-8.5/bin" >> $GITHUB_PATH
 
     - name: Generate Gradle Wrapper
-      run: gradle wrapper
+      run: gradle wrapper --gradle-version 8.5
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
