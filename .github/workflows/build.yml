@@ -25,22 +25,22 @@ jobs:
         unzip -q gradle-8.5-bin.zip
         echo "$PWD/gradle-8.5/bin" >> $GITHUB_PATH
 
-    - name: Build in Launcher Directory
+    - name: Run Build Script
       run: |
-        echo "Wechsle in den Launcher-Ordner..."
         cd launcher
-        
-        echo "Aktuelles Verzeichnis: $(pwd)"
+        echo "Inhalt des Launcher-Ordners:"
         ls -la
         
-        gradle wrapper --gradle-version 8.5
-        chmod +x gradlew || true
+        # Falls das Skript ausführbar gemacht werden muss
+        chmod +x build-and-install.sh
         
-        if [ -f "./gradlew" ]; then
+        # Wir schauen uns das Skript kurz an und führen es aus
+        cat build-and-install.sh
+        ./build-and-install.sh || {
+          echo "Fallback: Starte Gradle direkt..."
+          gradle wrapper --gradle-version 8.5
           ./gradlew assembleDebug
-        else
-          gradle assembleDebug
-        fi
+        }
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
