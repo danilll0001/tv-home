@@ -1,15 +1,18 @@
 package com.mihir.tvhome;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.media.AudioManager;
-import android.media.SoundPool;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -17,92 +20,154 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
 
+    private TextView tvTime, tvDate, tvGreeting, tvWeather, tvWifi;
+    private View recentAppsLayout, weatherWidget, musicPlayerLayout;
+    private RelativeLayout mainLayout;
     private SharedPreferences prefs;
-    private SoundPool soundPool;
-    private int clickSoundId;
-    private boolean soundEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        prefs = getSharedPreferences("TVHomeSettings", Context.MODE_PRIVATE);
-        soundEnabled = prefs.getBoolean("sound_effects", true);
+        prefs = getSharedPreferences("TVHomePrefs", MODE_PRIVATE);
 
-        // Apple TV Click-Sound
-        soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
+        mainLayout = findViewById(R.id.mainLayout);
+        tvTime = findViewById(R.id.tvTime);
+        tvDate = findViewById(R.id.tvDate);
+        tvGreeting = findViewById(R.id.tvGreeting);
+        tvWeather = findViewById(R.id.tvWeather);
+        tvWifi = findViewById(R.id.tvWifi);
+        recentAppsLayout = findViewById(R.id.recentAppsLayout);
+        weatherWidget = findViewById(R.id.tvWeather);
+        musicPlayerLayout = findViewById(R.id.musicPlayerLayout);
 
-        setupTimeAndGreeting();
-        setupButtons();
+        setupTopBar();
+        setupAppsRow();
     }
 
-    private void setupTimeAndGreeting() {
-        TextView txtTime = findViewById(R.id.txtTime);
-        TextView txtDate = findViewById(R.id.txtDate);
-        TextView txtGreeting = findViewById(R.id.txtGreeting);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        applyPreferences();
+        updateTimeAndGreeting();
+        checkNetworkStatus();
+    }
 
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.GERMANY);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d. MMMM", Locale.GERMANY);
+    private void applyPreferences() {
+        boolean showWeather = prefs.getBoolean("show_weather", true);
+        boolean showRecent = prefs.getBoolean("show_recent", true);
+        boolean dayTimeBg = prefs.getBoolean("daytime_bg", true);
+        boolean highContrast = prefs.getBoolean("high_contrast", false);
+        boolean showMusic = prefs.getBoolean("show_music", true);
 
-        Date now = new Date();
-        if (txtTime != null) txtTime.setText(timeFormat.format(now));
-        if (txtDate != null) txtDate.setText(dateFormat.format(now));
+        weatherWidget.setVisibility(showWeather ? View.VISIBLE : View.GONE);
+        recentAppsLayout.setVisibility(showRecent ? View.VISIBLE : View.GONE);
+        musicPlayerLayout.setVisibility(showMusic ? View.VISIBLE : View.GONE);
 
-        int hour = Integer.parseInt(new SimpleDateFormat("HH", Locale.GERMANY).format(now));
-        if (txtGreeting != null) {
-            if (hour >= 5 && hour < 12) {
-                txtGreeting.setText(R.string.good_morning);
-            } else if (hour >= 12 && hour < 18) {
-                txtGreeting.setText(R.string.good_afternoon);
+        if (dayTimeBg) {
+            int hour = Integer.parseInt(new SimpleDateFormat("HH", Locale.GERMANY).format(new Date()));
+            if (hour >= 6 && hour < 18) {
+                mainLayout.setBackgroundColor(Color.parseColor("#141A29")); // Tag-Farbton
             } else {
-                txtGreeting.setText(R.string.good_evening);
+                mainLayout.setBackgroundColor(Color.parseColor("#0B0B0B")); // Nacht-Farbton
             }
+        } else {
+            mainLayout.setBackgroundColor(Color.parseColor("#0B0B0B"));
+        }
+
+        if (highContrast) {
+            tvTime.setTextColor(Color.YELLOW);
+            tvGreeting.setTextColor(Color.WHITE);
+        } else {
+            tvTime.setTextColor(Color.WHITE);
+            tvGreeting.setTextColor(Color.parseColor("#A0A0A0"));
         }
     }
 
-    private void setupButtons() {
+    private void setupTopBar() {
         Button btnSettings = findViewById(R.id.btnSettings);
         if (btnSettings != null) {
-            applyAppleFocusEffect(btnSettings);
+            setupFocusZoom(btnSettings);
             btnSettings.setOnClickListener(v -> {
                 playClickSound();
-                Intent intent = new Intent(Settings.ACTION_SETTINGS);
-                startActivity(intent);
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
             });
         }
 
         Button btnApps = findViewById(R.id.btnApps);
         if (btnApps != null) {
-            applyAppleFocusEffect(btnApps);
+            setupFocusZoom(btnApps);
             btnApps.setOnClickListener(v -> {
                 playClickSound();
-                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS);
+                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS);
                 startActivity(intent);
             });
         }
 
-        Button btnHdmi1 = findViewById(R.id.btnHdmi1);
-        if (btnHdmi1 != null) {
-            applyAppleFocusEffect(btnHdmi1);
-            btnHdmi1.setOnClickListener(v -> playClickSound());
+        Button btnDevices = findViewById(R.id.btnDevices);
+        if (btnDevices != null) {
+            setupFocusZoom(btnDevices);
+            btnDevices.setOnClickListener(v -> playClickSound());
         }
     }
 
-    private void applyAppleFocusEffect(View view) {
+    private void setupAppsRow() {
+        int[] appIds = {R.id.app1, R.id.app2, R.id.app3, R.id.app4, R.id.app5, R.id.btnRecent1, R.id.btnRecent2};
+        for (int id : appIds) {
+            Button btn = findViewById(id);
+            if (btn != null) {
+                setupFocusZoom(btn);
+                btn.setOnClickListener(v -> playClickSound());
+            }
+        }
+    }
+
+    private void updateTimeAndGreeting() {
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.GERMANY);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d. MMMM", Locale.GERMANY);
+        Date now = new Date();
+
+        if (tvTime != null) tvTime.setText(timeFormat.format(now));
+        if (tvDate != null) tvDate.setText(dateFormat.format(now));
+
+        int hour = Integer.parseInt(new SimpleDateFormat("HH", Locale.GERMANY).format(now));
+        if (tvGreeting != null) {
+            if (hour >= 5 && hour < 12) tvGreeting.setText("Guten Morgen");
+            else if (hour >= 12 && hour < 18) tvGreeting.setText("Guten Tag");
+            else tvGreeting.setText("Guten Abend");
+        }
+    }
+
+    private void checkNetworkStatus() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm != null ? cm.getActiveNetworkInfo() : null;
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        if (tvWifi != null) {
+            tvWifi.setText(isConnected ? "📡 Online" : "⚠️ Offline");
+        }
+    }
+
+    private void setupFocusZoom(View view) {
         view.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
-                v.animate().scaleX(1.08f).scaleY(1.08f).setDuration(150).start();
                 playClickSound();
+                v.animate().scaleX(1.12f).scaleY(1.12f).setDuration(180)
+                        .setInterpolator(new AccelerateDecelerateInterpolator()).start();
             } else {
-                v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
+                v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(180)
+                        .setInterpolator(new AccelerateDecelerateInterpolator()).start();
             }
         });
     }
 
     private void playClickSound() {
-        if (soundEnabled && soundPool != null && clickSoundId != 0) {
-            soundPool.play(clickSoundId, 1.0f, 1.0f, 0, 0, 1.0f);
+        boolean soundEnabled = prefs.getBoolean("sound_effects", true);
+        if (soundEnabled) {
+            AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+            if (audioManager != null) {
+                audioManager.playSoundEffect(AudioManager.FX_KEY_CLICK);
+            }
         }
     }
 }
