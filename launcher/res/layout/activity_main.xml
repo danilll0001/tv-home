@@ -3,7 +3,7 @@
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/default_wallpaper"
+    android:background="#121212"
     android:padding="48dp">
 
     <!-- OBERE LEISTE (Uhrzeit, Datum, Begrüßung, Wetter & WLAN) -->
@@ -57,7 +57,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="@drawable/glass_background"
+            android:background="#22FFFFFF"
             android:paddingHorizontal="16dp"
             android:paddingVertical="8dp">
 
@@ -75,7 +75,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
                 android:text="Einstellungen"
-                android:background="@drawable/button_glass"
                 android:textColor="#FFFFFF"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -95,7 +94,6 @@
             android:layout_width="120dp"
             android:layout_height="44dp"
             android:text="HDMI 1"
-            android:background="@drawable/glass_background"
             android:textColor="#FFFFFF"
             android:layout_marginEnd="12dp" />
 
@@ -104,7 +102,6 @@
             android:layout_width="140dp"
             android:layout_height="44dp"
             android:text="+ App hinzufügen"
-            android:background="@drawable/glass_background"
             android:textColor="#FFFFFF" />
     </LinearLayout>
 
@@ -116,22 +113,16 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
         android:layout_marginBottom="24dp"
-        android:background="@drawable/glass_background"
+        android:background="#22FFFFFF"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="12dp"
         android:visibility="gone">
 
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_music" />
-
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
             android:orientation="vertical">
 
             <TextView
