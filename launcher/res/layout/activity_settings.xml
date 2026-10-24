@@ -79,7 +79,7 @@
             android:layout_width="match_parent"
             android:layout_height="55dp"
             android:background="#33FFFFFF"
-            android:text="🔧 Erweitere Android-Systemeinstellungen öffnen"
+            android:text="🔧 Erweiterte Android-Systemeinstellungen öffnen"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:focusable="true"
