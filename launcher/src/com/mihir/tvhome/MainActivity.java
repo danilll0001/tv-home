@@ -114,7 +114,7 @@ public class MainActivity extends Activity {
                 v.animate().scaleX(1.12f).scaleY(1.12f).setDuration(180)
                         .setInterpolator(new AccelerateDecelerateInterpolator()).start();
                 if (prefs.getBoolean("sound_effects", true) && audioManager != null) {
-                    audioManager.playSoundEffect(AudioManager.FX_KEY_NAVIGATION_ROUND);
+                    audioManager.playSoundEffect(AudioManager.FX_KEY_CLICK);
                 }
             } else {
                 v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(180)
