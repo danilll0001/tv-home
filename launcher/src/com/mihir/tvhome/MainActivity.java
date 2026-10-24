@@ -3,11 +3,10 @@ package com.mihir.tvhome;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.media.AudioManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
@@ -20,10 +19,12 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
 
-    private TextView tvTime, tvDate, tvGreeting, tvWeather, tvWifi;
-    private View recentAppsLayout, weatherWidget, musicPlayerLayout;
+    private TextView tvGreeting, tvTime, tvDate, tvWeather;
     private RelativeLayout mainLayout;
+    private LinearLayout recentAppsLayout, musicPlayerLayout;
+    private Handler timeHandler = new Handler(Looper.getMainLooper());
     private SharedPreferences prefs;
+    private AudioManager audioManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,129 +32,90 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         prefs = getSharedPreferences("TVHomePrefs", MODE_PRIVATE);
+        audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 
         mainLayout = findViewById(R.id.mainLayout);
+        tvGreeting = findViewById(R.id.tvGreeting);
         tvTime = findViewById(R.id.tvTime);
         tvDate = findViewById(R.id.tvDate);
-        tvGreeting = findViewById(R.id.tvGreeting);
         tvWeather = findViewById(R.id.tvWeather);
-        tvWifi = findViewById(R.id.tvWifi);
         recentAppsLayout = findViewById(R.id.recentAppsLayout);
-        weatherWidget = findViewById(R.id.tvWeather);
         musicPlayerLayout = findViewById(R.id.musicPlayerLayout);
 
-        setupTopBar();
-        setupAppsRow();
+        Button btnSettings = findViewById(R.id.btnSettings);
+        Button btnApps = findViewById(R.id.btnApps);
+        Button btnDevices = findViewById(R.id.btnDevices);
+
+        Button app1 = findViewById(R.id.app1);
+        Button app2 = findViewById(R.id.app2);
+        Button app3 = findViewById(R.id.app3);
+        Button app4 = findViewById(R.id.app4);
+        Button app5 = findViewById(R.id.app5);
+
+        // Focus Zoom & Sound Effekte
+        setupFocusAndSound(btnSettings);
+        setupFocusAndSound(btnApps);
+        setupFocusAndSound(btnDevices);
+        setupFocusAndSound(app1);
+        setupFocusAndSound(app2);
+        setupFocusAndSound(app3);
+        setupFocusAndSound(app4);
+        setupFocusAndSound(app5);
+
+        btnSettings.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
+
+        // Apps starten
+        app1.setOnClickListener(v -> launchApp("com.google.android.youtube.tv"));
+        app2.setOnClickListener(v -> launchApp("com.netflix.ninja"));
+        app3.setOnClickListener(v -> launchApp("com.amazon.amazonvideo.livingroom"));
+        app4.setOnClickListener(v -> launchApp("com.spotify.tv.web"));
+        app5.setOnClickListener(v -> launchApp("de.zdf.o2o"));
+
+        startClock();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         applyPreferences();
-        updateTimeAndGreeting();
-        checkNetworkStatus();
     }
 
     private void applyPreferences() {
         boolean showWeather = prefs.getBoolean("show_weather", true);
         boolean showRecent = prefs.getBoolean("show_recent", true);
-        boolean dayTimeBg = prefs.getBoolean("daytime_bg", true);
-        boolean highContrast = prefs.getBoolean("high_contrast", false);
+        boolean daytimeBg = prefs.getBoolean("daytime_bg", true);
         boolean showMusic = prefs.getBoolean("show_music", true);
 
-        weatherWidget.setVisibility(showWeather ? View.VISIBLE : View.GONE);
+        tvWeather.setVisibility(showWeather ? View.VISIBLE : View.GONE);
         recentAppsLayout.setVisibility(showRecent ? View.VISIBLE : View.GONE);
         musicPlayerLayout.setVisibility(showMusic ? View.VISIBLE : View.GONE);
 
-        if (dayTimeBg) {
-            int hour = Integer.parseInt(new SimpleDateFormat("HH", Locale.GERMANY).format(new Date()));
-            if (hour >= 6 && hour < 18) {
-                mainLayout.setBackgroundColor(Color.parseColor("#141A29")); // Tag-Farbton
+        if (daytimeBg) {
+            int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+            if (hour >= 6 && hour < 12) {
+                tvGreeting.setText("Guten Morgen");
+                mainLayout.setBackgroundColor(0xFF141E30);
+            } else if (hour >= 12 && hour < 18) {
+                tvGreeting.setText("Guten Tag");
+                mainLayout.setBackgroundColor(0xFF0F2027);
             } else {
-                mainLayout.setBackgroundColor(Color.parseColor("#0B0B0B")); // Nacht-Farbton
-            }
-        } else {
-            mainLayout.setBackgroundColor(Color.parseColor("#0B0B0B"));
-        }
-
-        if (highContrast) {
-            tvTime.setTextColor(Color.YELLOW);
-            tvGreeting.setTextColor(Color.WHITE);
-        } else {
-            tvTime.setTextColor(Color.WHITE);
-            tvGreeting.setTextColor(Color.parseColor("#A0A0A0"));
-        }
-    }
-
-    private void setupTopBar() {
-        Button btnSettings = findViewById(R.id.btnSettings);
-        if (btnSettings != null) {
-            setupFocusZoom(btnSettings);
-            btnSettings.setOnClickListener(v -> {
-                playClickSound();
-                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
-            });
-        }
-
-        Button btnApps = findViewById(R.id.btnApps);
-        if (btnApps != null) {
-            setupFocusZoom(btnApps);
-            btnApps.setOnClickListener(v -> {
-                playClickSound();
-                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS);
-                startActivity(intent);
-            });
-        }
-
-        Button btnDevices = findViewById(R.id.btnDevices);
-        if (btnDevices != null) {
-            setupFocusZoom(btnDevices);
-            btnDevices.setOnClickListener(v -> playClickSound());
-        }
-    }
-
-    private void setupAppsRow() {
-        int[] appIds = {R.id.app1, R.id.app2, R.id.app3, R.id.app4, R.id.app5, R.id.btnRecent1, R.id.btnRecent2};
-        for (int id : appIds) {
-            Button btn = findViewById(id);
-            if (btn != null) {
-                setupFocusZoom(btn);
-                btn.setOnClickListener(v -> playClickSound());
+                tvGreeting.setText("Guten Abend");
+                mainLayout.setBackgroundColor(0xFF0B0B0B);
             }
         }
     }
 
-    private void updateTimeAndGreeting() {
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.GERMANY);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d. MMMM", Locale.GERMANY);
-        Date now = new Date();
-
-        if (tvTime != null) tvTime.setText(timeFormat.format(now));
-        if (tvDate != null) tvDate.setText(dateFormat.format(now));
-
-        int hour = Integer.parseInt(new SimpleDateFormat("HH", Locale.GERMANY).format(now));
-        if (tvGreeting != null) {
-            if (hour >= 5 && hour < 12) tvGreeting.setText("Guten Morgen");
-            else if (hour >= 12 && hour < 18) tvGreeting.setText("Guten Tag");
-            else tvGreeting.setText("Guten Abend");
-        }
-    }
-
-    private void checkNetworkStatus() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm != null ? cm.getActiveNetworkInfo() : null;
-        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-        if (tvWifi != null) {
-            tvWifi.setText(isConnected ? "📡 Online" : "⚠️ Offline");
-        }
-    }
-
-    private void setupFocusZoom(View view) {
+    private void setupFocusAndSound(View view) {
         view.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
-                playClickSound();
                 v.animate().scaleX(1.12f).scaleY(1.12f).setDuration(180)
                         .setInterpolator(new AccelerateDecelerateInterpolator()).start();
+                if (prefs.getBoolean("sound_effects", true) && audioManager != null) {
+                    audioManager.playSoundEffect(AudioManager.FX_KEY_NAVIGATION_ROUND);
+                }
             } else {
                 v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(180)
                         .setInterpolator(new AccelerateDecelerateInterpolator()).start();
@@ -161,13 +123,24 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void playClickSound() {
-        boolean soundEnabled = prefs.getBoolean("sound_effects", true);
-        if (soundEnabled) {
-            AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-            if (audioManager != null) {
-                audioManager.playSoundEffect(AudioManager.FX_KEY_CLICK);
-            }
+    private void launchApp(String packageName) {
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(packageName);
+        if (launchIntent != null) {
+            startActivity(launchIntent);
         }
+    }
+
+    private void startClock() {
+        timeHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.GERMANY);
+                SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d. MMMM", Locale.GERMANY);
+                Date now = new Date();
+                tvTime.setText(timeFormat.format(now));
+                tvDate.setText(dateFormat.format(now));
+                timeHandler.postDelayed(this, 10000);
+            }
+        });
     }
 }
