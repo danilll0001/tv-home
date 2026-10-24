@@ -120,7 +120,7 @@
             android:focusable="true" />
     </LinearLayout>
 
-    <!-- Musik Mini-Player (Wird bei Nicht-Nutzung ausgeblendet) -->
+    <!-- Musik Mini-Player -->
     <LinearLayout
         android:id="@+id/musicPlayerLayout"
         android:layout_width="320dp"
@@ -173,7 +173,7 @@
         android:layout_alignParentBottom="true"
         android:orientation="vertical">
 
-        <!-- Zuletzt Verwendet (Recent Apps) Leiste -->
+        <!-- Zuletzt Verwendet Leiste -->
         <LinearLayout
             android:id="@+id/recentAppsLayout"
             android:layout_width="match_parent"
@@ -212,7 +212,7 @@
                 android:focusable="true" />
         </LinearLayout>
 
-        <!-- Haupt-App-Reihen (Exakt 5 Kacheln nebeneinander) -->
+        <!-- Haupt-App-Reihen (5 Kacheln) -->
         <LinearLayout
             android:id="@+id/appsRow"
             android:layout_width="match_parent"
